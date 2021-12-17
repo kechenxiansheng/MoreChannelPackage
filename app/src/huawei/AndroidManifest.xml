@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.cm.mcp">
+
+    <application>
+        <!--  渠道标识占位(测试，可不加)  -->
+        <meta-data android:name="CHANNEL_KEY" android:value="${channel_value}"/>
+        <meta-data android:name="CHANNEL_DEFAULT" android:value="huawei"/>
+    </application>
+
+</manifest>

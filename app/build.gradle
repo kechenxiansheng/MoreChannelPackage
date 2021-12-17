@@ -1,0 +1,158 @@
+plugins {
+    id 'com.android.application'
+}
+//TODO
+// 1、出全部渠道的release包：执行 assembleRelease （展开右侧gradle -> 项目 -> Tasks -> build -> assembleRelease）
+// 2、出指定渠道的release包：执行 assemble渠道Release / package渠道Release 都可以
+
+
+android {
+    compileSdkVersion 28
+
+    defaultConfig {
+        applicationId "com.cm.mcp"
+        minSdkVersion 16
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        config {
+            storeFile file("E:/androidstudioworkspace/keystore/keystore.jks")
+            storePassword "billbook"
+            keyAlias "BillBook"
+            keyPassword "billbook"
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    //渠道资源区分（assets，jniLibs，res，清单文件）
+    sourceSets {
+
+//TODO
+// 1、main配不配置都可以。
+// 2、source扫描时，会将main的清单文件和渠道的合并，所以渠道的清单文件只配置此渠道需要的即可，当然也可以选择完全配置
+// 3、如果渠道有自身的res，同样可以在 src/渠道/res 目录下处理
+
+//        main {
+//            //java.srcDirs = ['src']
+//            assets.srcDirs = ['src/main/assets']
+//            res.srcDirs = ['src/main/res']
+//            jniLibs.srcDirs = ['libs']
+//            manifest.srcFile 'src/main/AndroidManifest.xml'
+//        }
+        xiaomi {
+            assets.srcDirs = ['src/xiaomi/assets']
+            res.srcDirs = ['src/main/res']
+            jniLibs.srcDirs = ['libs']          //jni目录
+            manifest.srcFile 'src/xiaomi/AndroidManifest.xml'
+        }
+        huawei {
+            assets.srcDirs = ['src/huawei/assets']
+            res.srcDirs = ['src/main/res']
+            jniLibs.srcDirs = ['libs','libs/libhuawei']
+            manifest.srcFile 'src/huawei/AndroidManifest.xml'
+        }
+        oppo {
+            assets.srcDirs = ['src/oppo/assets']
+            res.srcDirs = ['src/main/res']
+            jniLibs.srcDirs = ['libs']
+            manifest.srcFile 'src/oppo/AndroidManifest.xml'
+        }
+    }
+
+    //渠道数据配置
+    flavorDimensions "MCP"  //随意设置，必须得有
+    //buildConfigField 配置参数到BuildConfig类中，字符串需要添加引号，注意转义
+    //manifestPlaceholders 动态修改清单文件中的指定属性，同时在manifest中已 ${属性名} 方式占位，多个以逗号隔开
+    productFlavors {
+        xiaomi{
+            dimension "MCP"
+            buildConfigField("String", "CHANNEL_KEY", "\"pf_xiaomi\"")
+            buildConfigField("String", "GET_TOKEN", "\"https://www.baidu.com\"")
+            manifestPlaceholders = ["app_name":"MCP-小米",app_icon:"@mipmap/icon_xiaomi",channel_value:"xiaomi"]
+            applicationId 'com.cm.mcp.xiaomi'
+        }
+        huawei{
+            dimension "MCP"
+            buildConfigField("String", "CHANNEL_KEY", "\"pf_huawei\"")
+            buildConfigField("String", "GET_TOKEN", "\"https://www.baidu.com\"")
+            manifestPlaceholders = ["app_name": "MCP-华为",app_icon:"@mipmap/icon_huawei",channel_value:"huawei"]
+            applicationId 'com.cm.mcp.huawei'
+        }
+        oppo{
+            dimension "MCP"
+            buildConfigField("String", "CHANNEL_KEY", "\"pf_oppo\"")
+            buildConfigField("String", "GET_TOKEN", "\"https://www.baidu.com\"")
+            manifestPlaceholders = ["app_name": "MCP-OPPO",app_icon:"@mipmap/icon_oppo",channel_value:"oppo"]
+            applicationId 'com.cm.mcp.oppo'
+        }
+    }
+    //给清单文件的占位符赋值
+    //TODO 这句会导致 manifestPlaceholders 中的属性替换无效并报错，暂不清楚原因。可以直接使用上面方式替换占位符属性值
+//    productFlavors.all {
+//        flavor ->
+//            flavor.manifestPlaceholders = [channel_value: name]
+//    }
+
+}
+
+//apk包重命名
+android.applicationVariants.all {
+    variant ->
+        variant.outputs.all {
+            output ->
+                def outputFile = output.outputFile
+                if(outputFile != null && outputFile.name.endsWith('.apk')){
+                    if (variant.buildType.name == 'release') {
+                        def fileName = "${releaseTime()}-r.apk"
+                        if(variant.flavorName != ""){
+                            fileName = "${variant.flavorName}-${releaseTime()}-r.apk"
+                        }
+                        outputFileName = fileName
+                    }else if(variant.buildType.name == 'debug'){
+                        def fileName = "${releaseTime()}-d.apk"
+                        if(variant.flavorName != ""){
+                            fileName = "${variant.flavorName}-${releaseTime()}-d.apk"
+                        }
+                        outputFileName = fileName
+                    }
+                }
+        }
+}
+
+private static def releaseTime() {
+    return new Date().format("yyyyMMddHHmmss", TimeZone.getTimeZone("UTC"))
+}
+
+dependencies {
+
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+    implementation 'com.android.support:multidex:1.0.3'
+    implementation files("libs/unity-classes.jar")
+
+    //使用 渠道implementation 配置对应渠道需要的远程/本地依赖
+    huaweiImplementation files("libs/libhuawei/gson-2.2.4.jar")
+}
